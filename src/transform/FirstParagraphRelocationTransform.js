@@ -6,15 +6,16 @@ import Polyfill from './Polyfill'
  * @return {boolean}
  */
 const isParagraphGood = paragraphElement => {
-  // Ignore coordinates. See 'enwiki > Bolton Field'
-  if (paragraphElement.querySelector('[id="coordinates"]')) {
-    return false
-  }
+  // Ignore coordinate divs. See enwiki 'Bolton Field' and 'Sharya Forest Museum Railway'.
+  const coordElement = paragraphElement.querySelector('[id="coordinates"]')
+  const coordTextLength = !coordElement ? 0 : coordElement.textContent.length
+
   // Ensures the paragraph has at least a little text. Otherwise silly things like a empty P or P
   // which only contains a BR tag will get pulled up. See enwiki 'Hawaii', 'United States',
   // 'Academy (educational institution)', 'Lovászpatona'
   const minLength = 50
-  const lengthExceedsMinLength = paragraphElement.textContent.length >= minLength
+  const lengthExceedsMinLength =
+    paragraphElement.textContent.length - coordTextLength >= minLength
   return lengthExceedsMinLength
 }
 
