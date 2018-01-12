@@ -23,7 +23,7 @@ const isParagraphGood = paragraphElement => {
  * @param  {!HTMLParagraphElement} goodParagraphElement
  * @return {!Array.<Element>}
  */
-const elementsToMove = goodParagraphElement => {
+const getElementsToMove = goodParagraphElement => {
   let didHitP = false
   let didHitNextP = false
   const shouldElementMoveUp = element => { // eslint-disable-line require-jsdoc
@@ -35,21 +35,6 @@ const elementsToMove = goodParagraphElement => {
     return didHitP && !didHitNextP
   }
   return Array.from(goodParagraphElement.parentNode.childNodes).filter(shouldElementMoveUp)
-}
-
-/**
- * A light-weight fragment to hold everything we want to move up.
- * @param  {!Document} document
- * @param  {!HTMLParagraphElement} goodParagraphElement
- * @return {!DocumentFragment}
- */
-const fragmentOfElementsToMove = (document, goodParagraphElement) => {
-  const fragment = document.createDocumentFragment()
-  // DocumentFragment's `appendChild` attaches the element to the fragment AND removes it from DOM.
-  // eslint-disable-next-line require-jsdoc
-  const moveElementToFragment = element => fragment.appendChild(element)
-  elementsToMove(goodParagraphElement).forEach(moveElementToFragment)
-  return fragment
 }
 
 /**
@@ -77,9 +62,15 @@ const moveFirstGoodParagraphUp = (document, containerID, afterElement) => {
   if (!firstGoodParagraph) {
     return
   }
+
+  // A light-weight fragment to hold everything we want to move up.
+  const fragment = document.createDocumentFragment()
+  // DocumentFragment's `appendChild` attaches the element to the fragment AND removes it from DOM.
+  getElementsToMove(firstGoodParagraph).forEach(element => fragment.appendChild(element))
+
   const container = document.getElementById(containerID)
   const insertBeforeThisElement = !afterElement ? container.firstChild : afterElement.nextSibling
-  const fragment = fragmentOfElementsToMove(document, firstGoodParagraph)
+
   // Attach the fragment just before `insertBeforeThisElement`. Conveniently, `insertBefore` on a
   // DocumentFragment inserts 'the children of the fragment, not the fragment itself.', so no
   // unnecessary container element is introduced.
@@ -91,7 +82,7 @@ export default {
   moveFirstGoodParagraphUp,
   test: {
     isParagraphGood,
-    fragmentOfElementsToMove,
+    getElementsToMove,
     getFirstGoodParagraph
   }
 }
