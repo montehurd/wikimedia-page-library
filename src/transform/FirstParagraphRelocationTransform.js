@@ -19,33 +19,36 @@ const isParagraphGood = paragraphElement => {
 }
 
 /**
- * A light-weight fragment to hold everything we want to move up (everything between
- * `paragraphElement` and the next paragraph).
- * @param  {!Document} document
- * @param  {!HTMLParagraphElement} paragraphElement
- * @return {!DocumentFragment}
+ * Everything we want to move up (everything between `goodParagraphElement` and the next paragraph).
+ * @param  {!HTMLParagraphElement} goodParagraphElement
+ * @return {!Array.<Element>}
  */
-const fragmentOfElementsToMoveFromParagraph = (document, paragraphElement) => {
+const elementsToMove = goodParagraphElement => {
   let didHitP = false
   let didHitNextP = false
   const shouldElementMoveUp = element => { // eslint-disable-line require-jsdoc
     if (didHitP && element.tagName === 'P') {
       didHitNextP = true
-    } else if (element.isEqualNode(paragraphElement)) {
+    } else if (element.isEqualNode(goodParagraphElement)) {
       didHitP = true
     }
     return didHitP && !didHitNextP
   }
+  return Array.from(goodParagraphElement.parentNode.childNodes).filter(shouldElementMoveUp)
+}
 
+/**
+ * A light-weight fragment to hold everything we want to move up.
+ * @param  {!Document} document
+ * @param  {!HTMLParagraphElement} goodParagraphElement
+ * @return {!DocumentFragment}
+ */
+const fragmentOfElementsToMove = (document, goodParagraphElement) => {
   const fragment = document.createDocumentFragment()
   // DocumentFragment's `appendChild` attaches the element to the fragment AND removes it from DOM.
   // eslint-disable-next-line require-jsdoc
   const moveElementToFragment = element => fragment.appendChild(element)
-
-  Array.from(paragraphElement.parentNode.childNodes)
-    .filter(shouldElementMoveUp)
-    .forEach(moveElementToFragment)
-
+  elementsToMove(goodParagraphElement).forEach(moveElementToFragment)
   return fragment
 }
 
@@ -76,7 +79,7 @@ const moveFirstGoodParagraphUp = (document, containerID, afterElement) => {
   }
   const container = document.getElementById(containerID)
   const insertBeforeThisElement = !afterElement ? container.firstChild : afterElement.nextSibling
-  const fragment = fragmentOfElementsToMoveFromParagraph(document, firstGoodParagraph)
+  const fragment = fragmentOfElementsToMove(document, firstGoodParagraph)
   // Attach the fragment just before `insertBeforeThisElement`. Conveniently, `insertBefore` on a
   // DocumentFragment inserts 'the children of the fragment, not the fragment itself.', so no
   // unnecessary container element is introduced.
@@ -88,7 +91,7 @@ export default {
   moveFirstGoodParagraphUp,
   test: {
     isParagraphGood,
-    fragmentOfElementsToMoveFromParagraph,
+    fragmentOfElementsToMove,
     getFirstGoodParagraph
   }
 }
