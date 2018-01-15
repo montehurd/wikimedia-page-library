@@ -6,8 +6,8 @@ import pagelib from '../../build/wikimedia-page-library-transform'
 const moveFirstGoodParagraphUp = pagelib.FirstParagraphRelocationTransform.moveFirstGoodParagraphUp
 const isParagraphGood = pagelib.FirstParagraphRelocationTransform.test.isParagraphGood
 const getElementsToMove = pagelib.FirstParagraphRelocationTransform.test.getElementsToMove
-// const getFirstGoodParagraph =
-//   pagelib.FirstParagraphRelocationTransform.test.getFirstGoodParagraph
+const getFirstGoodParagraph =
+  pagelib.FirstParagraphRelocationTransform.test.getFirstGoodParagraph
 
 // eslint-disable-next-line require-jsdoc
 const getChildTagNames = element => Array.from(element.children).map(el => el.tagName)
@@ -63,6 +63,44 @@ describe('FirstParagraphRelocationTransform', () => {
       const goodP = document.getElementById('p2')
       const elementIDs = getElementsToMove(goodP).map(el => el.id)
       assert.deepEqual(elementIDs, [ 'p2' ])
+    })
+  })
+  describe('getFirstGoodParagraph()', () => {
+    it('ignore p in table', () => {
+      const document = domino.createDocument(`
+        <div id="container">
+          <table><tr><td>Table stuff bla bla
+            <p id="p1"></p>
+            <p id="p2">
+              This p has a bunch of stuff in it. It's so great. I could read it again and again. But
+              it's in a TABLE!
+            </p>
+            <p id="nextP">Next P stuff</p>
+          </td></tr></table>
+          <p id="p3">
+            This p has a bunch of stuff in it. It's so great. I could read it again and again.
+          </p>
+        </div>`)
+      const goodP = getFirstGoodParagraph(document, 'container')
+      assert.ok(goodP.id === 'p3')
+    })
+    it('ignore p if not direct child of containerID element', () => {
+      const document = domino.createDocument(`
+        <div id="container">
+          <span>Span stuff bla bla
+            <p id="p1"></p>
+            <p id="p2">
+              This p has a bunch of stuff in it. It's so great. I could read it again and again. But
+              it's in a TABLE!
+            </p>
+            <p id="nextP">Next P stuff</p>
+          </span>
+          <p id="p3">
+            This p has a bunch of stuff in it. It's so great. I could read it again and again.
+          </p>
+        </div>`)
+      const goodP = getFirstGoodParagraph(document, 'container')
+      assert.ok(goodP.id === 'p3')
     })
   })
   describe('moveFirstGoodParagraphUp()', () => {
