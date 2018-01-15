@@ -9,9 +9,6 @@ const getElementsToMove = pagelib.FirstParagraphRelocationTransform.test.getElem
 const getFirstGoodParagraph =
   pagelib.FirstParagraphRelocationTransform.test.getFirstGoodParagraph
 
-// eslint-disable-next-line require-jsdoc
-const getChildTagNames = element => Array.from(element.children).map(el => el.tagName)
-
 describe('FirstParagraphRelocationTransform', () => {
   describe('isParagraphGood()', () => {
     const document = domino.createDocument(`<p id="p1"></p><p id="p2">This p has a bunch of
@@ -82,7 +79,7 @@ describe('FirstParagraphRelocationTransform', () => {
           </p>
         </div>`)
       const goodP = getFirstGoodParagraph(document, 'container')
-      assert.ok(goodP.id === 'p3')
+      assert.equal(goodP.id, 'p3')
     })
     it('ignore p if not direct child of containerID element', () => {
       const document = domino.createDocument(`
@@ -100,10 +97,14 @@ describe('FirstParagraphRelocationTransform', () => {
           </p>
         </div>`)
       const goodP = getFirstGoodParagraph(document, 'container')
-      assert.ok(goodP.id === 'p3')
+      assert.equal(goodP.id, 'p3')
     })
   })
   describe('moveFirstGoodParagraphUp()', () => {
+
+    // eslint-disable-next-line require-jsdoc
+    const getChildTagNames = element => Array.from(element.children).map(el => el.tagName)
+
     it('paragraph is relocated', () => {
       const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Obama.html')
       const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
