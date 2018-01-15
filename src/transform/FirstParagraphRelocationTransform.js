@@ -6,7 +6,10 @@ import Polyfill from './Polyfill'
  * @return {boolean}
  */
 const isParagraphGood = paragraphElement => {
-  // Ignore coordinate divs. See enwiki 'Bolton Field' and 'Sharya Forest Museum Railway'.
+  // Ignore 'coordinates' which are presently hidden. See enwiki 'Bolton Field' and 'Sharya Forest
+  // Museum Railway'. Not counting coordinates towards the min 'good' textContent length heuristic
+  // has dual effect of p's containing only coordinates being rejected, and p's containing
+  // coordinates but also other elements meeting the min 'good' textContent length being accepted.
   const coordElement = paragraphElement.querySelector('[id="coordinates"]')
   const coordTextLength = !coordElement ? 0 : coordElement.textContent.length
 

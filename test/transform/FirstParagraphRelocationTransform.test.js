@@ -1,11 +1,11 @@
 import assert from 'assert'
-// import domino from 'domino'
+import domino from 'domino'
 import fixtureIO from '../utilities/FixtureIO'
 import pagelib from '../../build/wikimedia-page-library-transform'
 
 const moveFirstGoodParagraphUp = pagelib.FirstParagraphRelocationTransform.moveFirstGoodParagraphUp
-// const isParagraphGood = pagelib.FirstParagraphRelocationTransform.test.isParagraphGood
-// const getElementsToMove = pagelib.FirstParagraphRelocationTransform.test.getElementsToMove
+const isParagraphGood = pagelib.FirstParagraphRelocationTransform.test.isParagraphGood
+const getElementsToMove = pagelib.FirstParagraphRelocationTransform.test.getElementsToMove
 // const getFirstGoodParagraph =
 //   pagelib.FirstParagraphRelocationTransform.test.getFirstGoodParagraph
 
@@ -13,67 +13,106 @@ const moveFirstGoodParagraphUp = pagelib.FirstParagraphRelocationTransform.moveF
 const getChildTagNames = element => Array.from(element.children).map(el => el.tagName)
 
 describe('FirstParagraphRelocationTransform', () => {
-  describe('moveFirstGoodParagraphUp()', () => {
-    describe('unit tests', () => {
-      describe('isParagraphGood()', () => {
-        // TODO: add tests!
-      })
-      describe('getElementsToMove()', () => {
-        // TODO: add tests!
-      })
-      describe('getFirstGoodParagraph()', () => {
-        // TODO: add tests!
-      })
+  describe('isParagraphGood()', () => {
+    const document = domino.createDocument(`<p id="p1"></p><p id="p2">This p has a bunch of
+    stuff in it. It's so great. I could read it again and again.</p>`)
+    it('accept p with lots of text', () => {
+      const goodP = document.getElementById('p2')
+      assert.equal(isParagraphGood(goodP), true)
     })
-    describe('integration tests', () => {
-      it('paragraph is relocated', () => {
-        const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Obama.html')
-        const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        // Before: [ 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'P', 'DIV' ]
-        moveFirstGoodParagraphUp(document, 'content_block_0', null)
-        assert.deepEqual(
-          getChildTagNames(document.getElementById('content_block_0')),
-          [ 'P', 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'DIV' ]
-        )
-        const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        assert.deepEqual(soughtP, movedP)
-      })
-      it('related UL elements are relocated', () => {
-        const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Planet.html')
-        const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        // Before: [ 'HR', 'DIV', 'TABLE', 'P', 'UL', 'P', 'P', 'P', 'P', 'P' ]
-        moveFirstGoodParagraphUp(document, 'content_block_0', null)
-        assert.deepEqual(
-          getChildTagNames(document.getElementById('content_block_0')),
-          [ 'P', 'UL', 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'P', 'P' ]
-        )
-        const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        assert.deepEqual(soughtP, movedP)
-      })
-      it('coordinates ignored, 1st paragraph relocated', () => {
-        const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Sharya.html')
-        const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        // Before: [ 'HR', 'TABLE', 'P', 'P' ]
-        moveFirstGoodParagraphUp(document, 'content_block_0', null)
-        assert.deepEqual(
-          getChildTagNames(document.getElementById('content_block_0')),
-          [ 'P', 'HR', 'TABLE', 'P' ]
-        )
-        const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        assert.deepEqual(soughtP, movedP)
-      })
-      it('coordinates ignored, 2nd paragraph relocated', () => {
-        const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Bolton.html')
-        const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(2)')
-        // Before: [ 'HR', 'P', 'TABLE', 'P', 'P', 'P' ]
-        moveFirstGoodParagraphUp(document, 'content_block_0', null)
-        assert.deepEqual(
-          getChildTagNames(document.getElementById('content_block_0')),
-          [ 'P', 'HR', 'P', 'TABLE', 'P', 'P' ]
-        )
-        const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
-        assert.deepEqual(soughtP, movedP)
-      })
+    it('reject p with no text', () => {
+      const emptyP = document.getElementById('p1')
+      assert.equal(isParagraphGood(emptyP), false)
+    })
+    it('reject p with only coordinates', () => {
+      const document = domino.createDocument(`
+      <p id="p1">
+        <span id="coordinates">
+          Coordinates: 39°54′04″N 083°08′13″W / 39.90111°N 83.13694°W / 39.90111; -83.13694
+        </span>
+      </p>
+      `)
+      const pWithCoordinates = document.getElementById('p1')
+      assert.equal(isParagraphGood(pWithCoordinates), false)
+    })
+    it('accept p with coordinates but also lots of text', () => {
+      const document = domino.createDocument(`
+        <p id="p1">
+          <span id="coordinates">
+            Coordinates: 39°54′04″N 083°08′13″W / 39.90111°N 83.13694°W / 39.90111; -83.13694
+          </span>
+          This p has a bunch of stuff in it. It's so great. I could read it again and again.
+        </p>
+      `)
+      const pWithCoordinates = document.getElementById('p1')
+      assert.equal(isParagraphGood(pWithCoordinates), true)
+    })
+  })
+  describe('getElementsToMove()', () => {
+    it('grabs accepted p and other elements before next p', () => {
+      const document = domino.createDocument(`<p id="p1"></p><p id="p2">This p has a bunch of stuff
+      in it. It's so great. I could read it again and again.</p><span id="span1">Other good stuff 1
+      </span><span id="span2">Other good stuff 2</span><p id="nextP">Next P stuff</p>`)
+      const goodP = document.getElementById('p2')
+      const elementIDs = getElementsToMove(goodP).map(el => el.id)
+      assert.deepEqual(elementIDs, [ 'p2', 'span1', 'span2' ])
+    })
+    it('grabs accepted p and nothing else if next element is a p', () => {
+      const document = domino.createDocument(`<p id="p1"></p><p id="p2">This p has a bunch of stuff
+      in it. It's so great. I could read it again and again.</p><p id="nextP">Next P stuff</p>`)
+      const goodP = document.getElementById('p2')
+      const elementIDs = getElementsToMove(goodP).map(el => el.id)
+      assert.deepEqual(elementIDs, [ 'p2' ])
+    })
+  })
+  describe('moveFirstGoodParagraphUp()', () => {
+    it('paragraph is relocated', () => {
+      const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Obama.html')
+      const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      // Before: [ 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'P', 'DIV' ]
+      moveFirstGoodParagraphUp(document, 'content_block_0', null)
+      assert.deepEqual(
+        getChildTagNames(document.getElementById('content_block_0')),
+        [ 'P', 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'DIV' ]
+      )
+      const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      assert.deepEqual(soughtP, movedP)
+    })
+    it('related UL elements are relocated', () => {
+      const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Planet.html')
+      const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      // Before: [ 'HR', 'DIV', 'TABLE', 'P', 'UL', 'P', 'P', 'P', 'P', 'P' ]
+      moveFirstGoodParagraphUp(document, 'content_block_0', null)
+      assert.deepEqual(
+        getChildTagNames(document.getElementById('content_block_0')),
+        [ 'P', 'UL', 'HR', 'DIV', 'TABLE', 'P', 'P', 'P', 'P', 'P' ]
+      )
+      const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      assert.deepEqual(soughtP, movedP)
+    })
+    it('coordinates ignored, 1st paragraph relocated', () => {
+      const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Sharya.html')
+      const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      // Before: [ 'HR', 'TABLE', 'P', 'P' ]
+      moveFirstGoodParagraphUp(document, 'content_block_0', null)
+      assert.deepEqual(
+        getChildTagNames(document.getElementById('content_block_0')),
+        [ 'P', 'HR', 'TABLE', 'P' ]
+      )
+      const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      assert.deepEqual(soughtP, movedP)
+    })
+    it('coordinates ignored, 2nd paragraph relocated', () => {
+      const document = fixtureIO.documentFromFixtureFile('FirstParagraphRelocation-Bolton.html')
+      const soughtP = document.querySelector('#content_block_0 > p:nth-of-type(2)')
+      // Before: [ 'HR', 'P', 'TABLE', 'P', 'P', 'P' ]
+      moveFirstGoodParagraphUp(document, 'content_block_0', null)
+      assert.deepEqual(
+        getChildTagNames(document.getElementById('content_block_0')),
+        [ 'P', 'HR', 'P', 'TABLE', 'P', 'P' ]
+      )
+      const movedP = document.querySelector('#content_block_0 > p:nth-of-type(1)')
+      assert.deepEqual(soughtP, movedP)
     })
   })
 })
