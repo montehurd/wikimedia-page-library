@@ -413,14 +413,16 @@ const addFooterMenu = (iframeWindow, iframeDocument) => {
 
 const addFooterReadMore = (iframeWindow, iframeDocument, event, iframe) => {
   iframeWindow.pagelib.FooterReadMore.setHeading('Read more', 'pagelib_footer_container_readmore_heading', iframeDocument)
-//  return
-  const readMoreItemsFetchedHandler = ()=>{
-    iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle('Kulfi', 'Saved for later', true, iframeDocument)
-    iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle('Ice_cream_parlor', 'Save for later', true, iframeDocument)
-    iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle('Sorbet', 'Save for later', false, iframeDocument)
+  const readMoreItemsFetchedHandler = titles => {
+    let shouldSave = true
+    titles.forEach(title => {
+      iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle(title, 'Saved for later', shouldSave, iframeDocument)
+      shouldSave = !shouldSave
+    })
     expandIframeHeight(iframe)
   }
-  iframeWindow.pagelib.FooterReadMore.add('Ice_cream', 3, 'pagelib_footer_container_readmore_pages', null, ()=>{}, readMoreItemsFetchedHandler, iframeDocument)
+  const baseURL = 'https://cors.io/?https://en.wikipedia.org'
+  iframeWindow.pagelib.FooterReadMore.add('Ice_cream', 3, 'pagelib_footer_container_readmore_pages', baseURL, () => {}, readMoreItemsFetchedHandler, iframeDocument)
 }
 
 const addFooterLegal = (iframeWindow, iframeDocument) => {
@@ -446,7 +448,7 @@ const addTransformControls = () => {
   addPlatformsControl()
   addTableCollapseControl()
   addDimImagesControl()
-  addEditPencilsControl()  //FIXME! pencil tranform has changed - use new integration
+  addEditPencilsControl()
   addWidenImagesControl()
   addCompatibilityControl()
   addHideRedlinksControl()
