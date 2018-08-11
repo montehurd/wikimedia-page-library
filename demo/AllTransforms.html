@@ -377,9 +377,10 @@ const addThemesControl = () => {
   const div = document.createElement('div')
   div.innerHTML = 'Theme'
   document.getElementById('demo_controls').appendChild(div)
-  addCheckboxToDemoControls('theme_radio', 'Dark', 'radio', 'DARK', themeSelectionHandler)
-  addCheckboxToDemoControls('theme_radio', 'Sepia', 'radio', 'SEPIA', themeSelectionHandler)
   addCheckboxToDemoControls('theme_radio', 'Default', 'radio', 'DEFAULT', themeSelectionHandler)
+  addCheckboxToDemoControls('theme_radio', 'Sepia', 'radio', 'SEPIA', themeSelectionHandler)
+  addCheckboxToDemoControls('theme_radio', 'Dark', 'radio', 'DARK', themeSelectionHandler)
+  addCheckboxToDemoControls('theme_radio', 'Black', 'radio', 'BLACK', themeSelectionHandler)
 }
 
 const addPlatformsControl = () => {
