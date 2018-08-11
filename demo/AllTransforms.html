@@ -110,9 +110,10 @@ const anchorsFromArticleRefs = articleRefs => articleRefs.map(articleRef => {
  */
 const enclosedSectionHTMLsFromSections = sections => sections.map(section => {
   const line = section.line || ''
+  const toclevel = section.toclevel || '1'
   return `<div class='content_block' id='${section.id}'>
-            <div class='section_header' id='${section.id}' line='${line}' level='${section.level}'>
-              <h${section.level}>${line}</h${section.level}>
+            <div class='section_header' id='${section.id}' line='${line}' toclevel='${toclevel}'>
+              <h${toclevel}>${line}</h${toclevel}>
             </div>
             ${section.text}
           </div>`
@@ -323,7 +324,7 @@ const addEditPencilsControl = () => {
       iframeWindow.pagelib.EditTransform.newEditSectionHeader(
         iframeDocument, 
         sectionHeader.getAttribute('id'), 
-        sectionHeader.getAttribute('level'), 
+        sectionHeader.getAttribute('toclevel'), 
         sectionHeader.getAttribute('line')
       )
     const replaceSectionHeaderWithEditPencilHeader = sectionHeader => {
