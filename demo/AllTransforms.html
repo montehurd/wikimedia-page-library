@@ -82,7 +82,8 @@ const articleRefsFromArticlesJSON = json => flattenArrayOfArrays(
       articleData.revision,
       ArticleRefSourceType.mobileView
     ),
-    new ArticleRef(articleData.lang,
+    new ArticleRef(
+      articleData.lang,
       articleData.title,
       articleData.revision,
       ArticleRefSourceType.mobileContentService
@@ -107,11 +108,15 @@ const anchorsFromArticleRefs = articleRefs => articleRefs.map(articleRef => {
  * @param  {!Array<object>} sections
  * @return {!Array<String>}
  */
-const enclosedSectionHTMLsFromSections = sections => sections.map(section =>
-  `<div class='content_block' id='${section.id}'>
-      <h2>${section.line ? section.line : ''}</h2>
-      <br>${section.text}
-    </div>`)
+const enclosedSectionHTMLsFromSections = sections => sections.map(section => {
+  const line = section.line || ''
+  return `<div class='content_block' id='${section.id}'>
+            <div class='section_header' id='${section.id}' line='${line}' level='${section.level}'>
+              <h${section.level}>${line}</h${section.level}>
+            </div>
+            ${section.text}
+          </div>`
+})
 
 /**
  * Converts section HTML strings to a single HTML string.
@@ -314,10 +319,20 @@ const addDimImagesControl = () => {
 const addEditPencilsControl = () => {
   addCheckboxToDemoControls('edit_pencil_checkbox', 'Edit pencils *', 'checkbox', null, (iframeWindow, iframeDocument) => {
     event.target.disabled = true
-    iframeDocument.querySelectorAll('h2, h3, h4').forEach((header, index) => {
-      const button = iframeWindow.pagelib.EditTransform.newEditSectionButton(iframeDocument, index)
-      header.parentNode.insertBefore(button, header)
-    })
+    const editPencilHeaderFromSectionHeader = sectionHeader =>
+      iframeWindow.pagelib.EditTransform.newEditSectionHeader(
+        iframeDocument, 
+        sectionHeader.getAttribute('id'), 
+        sectionHeader.getAttribute('level'), 
+        sectionHeader.getAttribute('line')
+      )
+    const replaceSectionHeaderWithEditPencilHeader = sectionHeader => {
+      sectionHeader.parentNode.replaceChild(
+        editPencilHeaderFromSectionHeader(sectionHeader),
+        sectionHeader
+      )      
+    }
+    iframeDocument.querySelectorAll('.section_header').forEach(replaceSectionHeaderWithEditPencilHeader)
   })
 }
 
@@ -431,7 +446,7 @@ const addTransformControls = () => {
   addPlatformsControl()
   addTableCollapseControl()
   addDimImagesControl()
-  // addEditPencilsControl()  //FIXME! pencil tranform has changed - use new integration
+  addEditPencilsControl()  //FIXME! pencil tranform has changed - use new integration
   addWidenImagesControl()
   addCompatibilityControl()
   addHideRedlinksControl()
