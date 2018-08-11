@@ -177,7 +177,7 @@ const articleEnclosedInOuterHTML = articleHTML => {
     <head>
       <meta charset=utf-8>
       <link href='https://en.wikipedia.org/w/load.php?debug=true&lang=en&modules=skins.minerva.base.reset|skins.minerva.content.styles|ext.cite.style|ext.math.styles|ext.timeline.styles|mediawiki.page.gallery.styles|mediawiki.skinning.content.parsoid&only=styles&version=&*' rel='stylesheet' type='text/css'></link>
-      <link href=../build/wikimedia-page-library-transform.css rel=stylesheet></link>
+      <link href=http://localhost:8080/wikimedia-page-library-transform.css rel=stylesheet>
       <style>
         body {
           padding: 20px !important;
@@ -186,7 +186,7 @@ const articleEnclosedInOuterHTML = articleHTML => {
           padding-bottom: 50px;
         }
       </style>
-      <${script} src=build/wikimedia-page-library-transform.js></${script}>
+      <${script} src=http://localhost:8080/wikimedia-page-library-transform.js></${script}>
     </head>
     <body>
       <div class='content' id='content'>
@@ -228,6 +228,7 @@ const addHTMLToDocument = (html, articleRef) => {
   window.addEventListener('resize', () => expandIframeHeight(iframe), true)
   
   const iframeWindow = iframe.contentWindow
+//  iframeWindow.pagelib = pagelib
   const iframeDocument = iframeWindow.document
   
   iframeDocument.open()
@@ -397,6 +398,7 @@ const addFooterMenu = (iframeWindow, iframeDocument) => {
 
 const addFooterReadMore = (iframeWindow, iframeDocument, event, iframe) => {
   iframeWindow.pagelib.FooterReadMore.setHeading('Read more', 'pagelib_footer_container_readmore_heading', iframeDocument)
+//  return
   const readMoreItemsFetchedHandler = ()=>{
     iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle('Kulfi', 'Saved for later', true, iframeDocument)
     iframeWindow.pagelib.FooterReadMore.updateSaveButtonForTitle('Ice_cream_parlor', 'Save for later', true, iframeDocument)
@@ -429,14 +431,13 @@ const addTransformControls = () => {
   addPlatformsControl()
   addTableCollapseControl()
   addDimImagesControl()
-  addEditPencilsControl()
+  // addEditPencilsControl()  //FIXME! pencil tranform has changed - use new integration
   addWidenImagesControl()
   addCompatibilityControl()
   addHideRedlinksControl()
   addFooterControl()
-  addLazyImageLoadControl()
+  //addLazyImageLoadControl()
 }
-
 
 
 
@@ -459,9 +460,9 @@ const addTransformControls = () => {
       .then(articlesCompleteHTML => articlesCompleteHTML.map((articleCompleteHTML, i) => {
         return addHTMLToDocument(articleCompleteHTML, articleRefs[i])
       }))
-      // .then(() => anchorsFromArticleRefs(articleRefs))
-      // .then(addAnchorsToMenu)
-      // .then(addTransformControls)
+      .then(() => anchorsFromArticleRefs(articleRefs))
+      .then(addAnchorsToMenu)
+      .then(addTransformControls)
   )
 
 
