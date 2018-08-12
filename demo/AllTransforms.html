@@ -111,7 +111,7 @@ const anchorsFromArticleRefs = articleRefs => articleRefs.map(articleRef => {
 const enclosedSectionHTMLsFromSections = sections => sections.map(section => {
   const line = section.line || ''
   const toclevel = section.toclevel || '1'
-  return `<div class='content_block' id='${section.id}'>
+  return `<div class='content_block' id='content_block_${section.id}'>
             <div class='section_header' id='${section.id}' line='${line}' toclevel='${toclevel}'>
               <h${toclevel}>${line}</h${toclevel}>
             </div>
@@ -234,8 +234,12 @@ const addHTMLToDocument = (html, articleRef) => {
   window.addEventListener('resize', () => expandIframeHeight(iframe), true)
   
   const iframeWindow = iframe.contentWindow
-//  iframeWindow.pagelib = pagelib
   const iframeDocument = iframeWindow.document
+  
+  // Park the ArticleRef here for easy access later. For example, provides easy way to check if a
+  // document is showing content for a particular ArticleRef sourceType. This is handy in case a
+  // particular transform demo should be applied to, say, mobileview content, but not MCS content.
+  iframeDocument.articleRef = articleRef
   
   iframeDocument.open()
   iframeDocument.write(html)
@@ -441,21 +445,35 @@ const addFooterControl = () => {
   })
 }
 
-const addLazyImageLoadControl = () => {
-    //TODO: add it!
+const addLeadIntroductionControl = () => {
+  addCheckboxToDemoControls('first_paragraph_checkbox', 'Move 1st Paragraph Up (only needed for mobileview) *', 'checkbox', null, (iframeWindow, iframeDocument, event, iframe) => {
+    event.target.disabled = true
+    if (iframeDocument.articleRef.sourceType == ArticleRefSourceType.mobileView){
+      iframeWindow.pagelib.LeadIntroductionTransform.moveLeadIntroductionUp(iframeDocument, 'content_block_0', iframeDocument.querySelector('.section_header'))
+    }
+  })
 }
+
+// const addLazyImageLoadControl = () => {
+//     //TODO: add it!
+// }
+
+
+
+
 
 const addTransformControls = () => {
   addThemesControl()
   addPlatformsControl()
   addTableCollapseControl()
   addDimImagesControl()
+  addLeadIntroductionControl()
   addEditPencilsControl()
   addWidenImagesControl()
   addCompatibilityControl()
   addHideRedlinksControl()
   addFooterControl()
-  //addLazyImageLoadControl()
+  // addLazyImageLoadControl()
 }
 
 
