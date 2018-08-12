@@ -432,7 +432,7 @@ const addFooterReadMore = (iframeWindow, iframeDocument, event, iframe) => {
 }
 
 const addFooterLegal = (iframeWindow, iframeDocument) => {
-  iframeWindow.pagelib.FooterLegal.add(iframeDocument, 'Content is available under $1 unless otherwise noted.', 'CC BY-SA 3.0', 'pagelib_footer_container_legal', ()=>{})
+  iframeWindow.pagelib.FooterLegal.add(iframeDocument, 'Content is available under $1 unless otherwise noted.', 'CC BY-SA 3.0', 'pagelib_footer_container_legal', () => {}, 'View in browser', () => {})
 }
 
 const addFooterControl = () => {
