@@ -61,7 +61,7 @@
   <body>
     <div id='theme_demo_tools'>
       <form id='demo_controls'></form>
-      <br>* = not currently reversible - reload page to reset
+      <br>* = not currently reversible - reload to reset
       <div id='theme_demo_menu'></div>
     </div>
     
@@ -244,6 +244,9 @@ const addHTMLToDocument = (html, articleRef) => {
   iframeDocument.open()
   iframeDocument.write(html)
   iframeDocument.close()
+  
+  const htmlElement = iframeDocument.querySelector('html')
+  htmlElement.setAttribute('dir', articleRef.isRTL() ? 'rtl' : 'ltr')
 }
 
 
@@ -427,8 +430,9 @@ const addFooterReadMore = (iframeWindow, iframeDocument, event, iframe) => {
     })
     expandIframeHeight(iframe)
   }
-  const baseURL = 'https://cors.io/?https://en.wikipedia.org'
-  iframeWindow.pagelib.FooterReadMore.add('Ice_cream', 3, 'pagelib_footer_container_readmore_pages', baseURL, () => {}, readMoreItemsFetchedHandler, iframeDocument)
+  const baseURL = `https://cors.io/?https://${iframeDocument.articleRef.lang}.wikipedia.org`
+  // Add read more for article 'a' since most langs seem to have article about this letter. 
+  iframeWindow.pagelib.FooterReadMore.add('a', 3, 'pagelib_footer_container_readmore_pages', baseURL, () => {}, readMoreItemsFetchedHandler, iframeDocument)
 }
 
 const addFooterLegal = (iframeWindow, iframeDocument) => {
