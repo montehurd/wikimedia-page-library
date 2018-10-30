@@ -429,7 +429,7 @@ const addFooterMenu = (iframeWindow, iframeDocument) => {
   iframeWindow.pagelib.FooterMenu.maybeAddItem('View on a map', '', iframeWindow.pagelib.FooterMenu.MenuItemType.coordinate, 'pagelib_footer_container_menu_items', ()=>{}, iframeDocument)
 }
 
-const addFooterReadMore = (iframeWindow, iframeDocument, event, iframe) => {
+const addFooterReadMore = (iframeWindow, iframeDocument, iframe) => {
   iframeWindow.pagelib.FooterReadMore.setHeading('Read more', 'pagelib_footer_container_readmore_heading', iframeDocument)
   const readMoreItemsFetchedHandler = titles => {
     let shouldSave = true
@@ -453,13 +453,13 @@ const addFooterControl = () => {
     event.target.disabled = true
     addFooterContainer(iframeWindow, iframeDocument)
     addFooterMenu(iframeWindow, iframeDocument)
-    addFooterReadMore(iframeWindow, iframeDocument, event, iframe)
+    addFooterReadMore(iframeWindow, iframeDocument, iframe)
     addFooterLegal(iframeWindow, iframeDocument)
   })
 }
 
 const addLeadIntroductionControl = () => {
-  addCheckboxToDemoControls('first_paragraph_checkbox', 'Move 1st Paragraph Up (only needed for mobileview) *', 'checkbox', null, (iframeWindow, iframeDocument, event, iframe) => {
+  addCheckboxToDemoControls('first_paragraph_checkbox', 'Move 1st Paragraph Up (only needed for mobileview) *', 'checkbox', null, (iframeWindow, iframeDocument, event) => {
     event.target.disabled = true
     if (iframeDocument.articleRef.sourceType == ArticleRefSourceType.mobileView){
       iframeWindow.pagelib.LeadIntroductionTransform.moveLeadIntroductionUp(iframeDocument, 'content_block_0', iframeDocument.querySelector('.section_header'))
