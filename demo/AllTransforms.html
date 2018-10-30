@@ -499,11 +499,9 @@ const articleSelectOptionsFromArticleRefs = articleRefs => articleRefs.map(artic
   option.innerHTML = articleRef.displayName()
   return option
 })
-const addArticleOptionsToSelect = options => {
-  const select = document.getElementById('theme_demo_article_select')
+const addArticleOptionsToSelect = (options, select) => {
   select.size = options.length
   options.forEach(anchor => select.appendChild(anchor))
-  return select
 }
 const selectedValuesFromSelect = select => {
   let selectedOptions = Array.apply(null, select.options).filter(option => option.selected)
@@ -518,19 +516,15 @@ const addIframePreviewsForArticleRefs = articleRefs => {
       return addHTMLToDocument(articleCompleteHTML, articleRefs[i])
     }))
 }
-const articleSelectionChanged = (selectElement, articleRefs) => {
-  removeAllIframePreviews()
-  let selectedArticleRefs = articleRefs.filter(articleRef => selectedValuesFromSelect(selectElement).includes(articleRef.fileName()))
-  addIframePreviewsForArticleRefs(selectedArticleRefs)
-  
-  removeAllAnchorsFromMenu()
-  addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
-
-  //TODO: to reset all form elements here
-}
 
 
-
+/*
+TODO:
+- reset form elements on article selection 
+- add PCS content source
+- add support for lazy img
+- remove all old demo code
+*/
 
 
 
@@ -559,6 +553,8 @@ const addTransformControls = () => {
 
 
 
+  const articleSelectElement = document.getElementById('theme_demo_article_select')
+  const articleRefsForSelectedArticleOptions = (selectElement, articleRefs) => articleRefs.filter(articleRef => selectedValuesFromSelect(selectElement).includes(articleRef.fileName()))
 
 
 
@@ -566,13 +562,28 @@ const addTransformControls = () => {
     .then(response => response.json())
     .then(articleRefsFromArticlesJSON)
     .then(articleRefs => [articleSelectOptionsFromArticleRefs(articleRefs), articleRefs])
-    .then(([options, articleRefs]) => [addArticleOptionsToSelect(options), articleRefs])
-    .then(([select, articleRefs]) => {
-      select.addEventListener('change', event => {
+    .then(([options, articleRefs]) => {
+      addArticleOptionsToSelect(options, articleSelectElement)
+      return articleRefs
+    })
+    .then(articleRefs => {
+      articleSelectElement.addEventListener('change', event => {
         if (!event) {
           return
         }
-        articleSelectionChanged(event.target, articleRefs)
+        
+        let selectedArticleRefs = articleRefsForSelectedArticleOptions(event.target, articleRefs)
+ 
+        removeAllIframePreviews()
+        addIframePreviewsForArticleRefs(selectedArticleRefs)
+        
+        removeAllAnchorsFromMenu()
+        addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
+ 
+        //TODO: to reset all form elements here
+
+
+
       }, true)
     })
     .then(addTransformControls)
