@@ -61,8 +61,16 @@
   <body>
     <div id='theme_demo_tools'>
       <form id='demo_controls'></form>
-      <br>* = not currently reversible - reload to reset
+      <br>* = currently irreversible - reload to reset
+      <br><br>
+      Articles to preview:
+      <br>(multiple selection supported)
+      <br><br>
+      <select id='theme_demo_article_select' onchange='articleSelectionChanged()' multiple></select>
+      <br><br>
+      Jump between article previews:
       <div id='theme_demo_menu'></div>
+      <br><br>
     </div>
     
     <script>
@@ -466,6 +474,69 @@ const addLeadIntroductionControl = () => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+const removeAllIframePreviews = () => {
+  const removeElement = iframe => iframe.parentNode.removeChild(iframe)
+  document.querySelectorAll('iframe.article_preview, div.theme_demo_article_title')
+    .forEach(removeElement)
+}
+const removeAllAnchorsFromMenu = () => {
+  document.getElementById('theme_demo_menu').innerHTML = ''
+}
+const articleSelectOptionsFromArticleRefs = articleRefs => articleRefs.map(articleRef => {
+  const option = document.createElement('option')
+  option.value = articleRef.fileName()
+  option.innerHTML = articleRef.displayName()
+  return option
+})
+const addArticleOptionsToSelect = options => {
+  const select = document.getElementById('theme_demo_article_select')
+  select.size = options.length
+  options.forEach(anchor => select.appendChild(anchor))
+  return select
+}
+const selectedValuesFromSelect = select => {
+  let selectedOptions = Array.apply(null, select.options).filter(option => option.selected)
+  return selectedOptions.map(option => option.value)
+}
+const addIframePreviewsForArticleRefs = articleRefs => {
+  Promise.all(fetchSectionsJSONForArticleRefs(articleRefs))
+    .then(articlesSectionsJSON => articlesSectionsJSON.map(enclosedSectionHTMLsFromSections))
+    .then(articlesEnclosedSectionHTML => articlesEnclosedSectionHTML.map(htmlFromAllSectionHTMLs))
+    .then(articlesHTML => articlesHTML.map(articleEnclosedInOuterHTML))
+    .then(articlesCompleteHTML => articlesCompleteHTML.map((articleCompleteHTML, i) => {
+      return addHTMLToDocument(articleCompleteHTML, articleRefs[i])
+    }))
+}
+const articleSelectionChanged = (selectElement, articleRefs) => {
+  removeAllIframePreviews()
+  let selectedArticleRefs = articleRefs.filter(articleRef => selectedValuesFromSelect(selectElement).includes(articleRef.fileName()))
+  addIframePreviewsForArticleRefs(selectedArticleRefs)
+  
+  removeAllAnchorsFromMenu()
+  addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
+
+  //TODO: to reset all form elements here
+}
+
+
+
+
+
+
+
+
+
 const addTransformControls = () => {
   addThemesControl()
   addPlatformsControl()
@@ -494,21 +565,17 @@ const addTransformControls = () => {
   fetch(DEMO_ARTICLES_INDEX_PATH)
     .then(response => response.json())
     .then(articleRefsFromArticlesJSON)
-    .then(articleRefs => Promise.all(fetchSectionsJSONForArticleRefs(articleRefs))
-      .then(articlesSectionsJSON => articlesSectionsJSON.map(enclosedSectionHTMLsFromSections))
-      .then(articlesEnclosedSectionHTML => articlesEnclosedSectionHTML.map(htmlFromAllSectionHTMLs))
-      .then(articlesHTML => articlesHTML.map(articleEnclosedInOuterHTML))
-      .then(articlesCompleteHTML => articlesCompleteHTML.map((articleCompleteHTML, i) => {
-        return addHTMLToDocument(articleCompleteHTML, articleRefs[i])
-      }))
-      .then(() => anchorsFromArticleRefs(articleRefs))
-      .then(addAnchorsToMenu)
-      .then(addTransformControls)
-  )
-
-
-
-
+    .then(articleRefs => [articleSelectOptionsFromArticleRefs(articleRefs), articleRefs])
+    .then(([options, articleRefs]) => [addArticleOptionsToSelect(options), articleRefs])
+    .then(([select, articleRefs]) => {
+      select.addEventListener('change', event => {
+        if (!event) {
+          return
+        }
+        articleSelectionChanged(event.target, articleRefs)
+      }, true)
+    })
+    .then(addTransformControls)
 
 
     </script>
