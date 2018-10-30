@@ -258,6 +258,9 @@ const addHTMLToDocument = (html, articleRef) => {
   
   const htmlElement = iframeDocument.querySelector('html')
   htmlElement.setAttribute('dir', articleRef.isRTL() ? 'rtl' : 'ltr')
+  
+//re-apply transforms here?   
+  
 }
 
 
@@ -270,16 +273,11 @@ const addHTMLToDocument = (html, articleRef) => {
 
 
 
-
-
-
-
-
-
-
-
-
 const configureCheckboxClickToPerformClosureForEachIframe = (checkbox, closure) => {
+
+// to be able to re-apply transforms after reload, would need to park closures somewhere then re-fire them
+// on iframe after html loaded
+
   checkbox.addEventListener('click', event => {
     document.querySelectorAll('iframe.article_preview')
       .forEach(iframe => {
@@ -469,6 +467,17 @@ const addLeadIntroductionControl = () => {
   })
 }
 
+const addRTLControl = () => {
+  const selectionHandler = (iframeWindow, iframeDocument, event) => {
+    iframeDocument.querySelector('html').setAttribute('dir', event.target.value)
+  }
+  const div = document.createElement('div')
+  div.innerHTML = 'Text direction'
+  document.getElementById('demo_controls').appendChild(div)
+  addCheckboxToDemoControls('dir_radio', 'LTR', 'radio', 'ltr', selectionHandler)
+  addCheckboxToDemoControls('dir_radio', 'RTL', 'radio', 'rtl', selectionHandler)
+}
+ 
 // const addLazyImageLoadControl = () => {
 //     //TODO: add it!
 // }
@@ -545,6 +554,7 @@ const addTransformControls = () => {
   addCompatibilityControl()
   addHideRedlinksControl()
   addFooterControl()
+  addRTLControl()
   // addLazyImageLoadControl()
 }
 
@@ -575,6 +585,10 @@ const addTransformControls = () => {
           return
         }
         
+// document.querySelectorAll('input:checked').forEach(input => {
+//   input.checked = false
+// })
+        
         let selectedArticleRefs = articleRefsForSelectedArticleOptions(event.target, articleRefs)
  
         removeAllIframePreviews()
@@ -584,8 +598,20 @@ const addTransformControls = () => {
         addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
  
         //TODO: to reset all form elements here
-
-
+// setTimeout(function(){ 
+// let inputs = document.querySelectorAll('input:checked')
+// inputs.forEach(input => {
+// 
+//   var evt = new MouseEvent('click', {
+// 		bubbles: true,
+// 		cancelable: true,
+// 		view: window
+// 	})
+//   input.dispatchEvent(evt)
+// 
+// })
+// console.log(inputs.length)
+// }, 3000);
 
       }, true)
     })
