@@ -159,33 +159,6 @@ const addAnchorsToMenu = anchors => {
   anchors.forEach(anchor => themeDemoMenu.appendChild(anchor))
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const articleEnclosedInOuterHTML = articleHTML => {
   const script = 'script'
   return `
@@ -220,9 +193,6 @@ const expandIframeHeight = iframe => {
   iframe.style.height = `${iframe.contentWindow.document.body.offsetHeight}px`
 }
 
-
-
-
 const titleDivForArticleRef = articleRef => {
   const div = document.createElement('div')
   div.innerHTML = articleRef.displayName()
@@ -232,6 +202,13 @@ const titleDivForArticleRef = articleRef => {
   return div
 }
 
+let activeTransformApplicationClosures = new Object();
+
+const reapplyActiveTransformsToIframe = (iframe) => {
+  const apply = ([id, transformClosure]) => transformClosure(iframe)
+  Object.entries(activeTransformApplicationClosures).forEach(apply)
+}
+
 const addHTMLToDocument = (html, articleRef) => {
   const iframe = document.createElement('iframe')
   iframe.scrolling = 'no'
@@ -239,13 +216,24 @@ const addHTMLToDocument = (html, articleRef) => {
   const titleDiv = titleDivForArticleRef(articleRef)
   document.body.appendChild(titleDiv)
   
-  iframe.addEventListener('load', event => expandIframeHeight(event.target), true)
+  iframe.addEventListener('load', event => {
+    expandIframeHeight(event.target)
+    
+    // Once the pagelib is attached to the iframe content window it's safe to apply previously selected transforms
+    if (iframe.contentWindow.pagelib) {
+      reapplyActiveTransformsToIframe(iframe)
+    }
+ 
+  }, true)
   
   document.body.appendChild(iframe)
+  
+//FIXME: i think this was so iframe would resize itself if its doc height changed, but it's not working.
+//should it be on `iframe.contentWindow` - that doesn't seem to work either...
+//to repro expand and collapse tables and check if bottom of article is clipped
   window.addEventListener('resize', () => expandIframeHeight(iframe), true)
   
-  const iframeWindow = iframe.contentWindow
-  const iframeDocument = iframeWindow.document
+  const iframeDocument = iframe.contentWindow.document
   
   // Park the ArticleRef here for easy access later. For example, provides easy way to check if a
   // document is showing content for a particular ArticleRef sourceType. This is handy in case a
@@ -257,36 +245,32 @@ const addHTMLToDocument = (html, articleRef) => {
   iframeDocument.close()
   
   const htmlElement = iframeDocument.querySelector('html')
-  htmlElement.setAttribute('dir', articleRef.isRTL() ? 'rtl' : 'ltr')
-  
-//re-apply transforms here?   
-  
+  htmlElement.setAttribute('dir', articleRef.isRTL() ? 'rtl' : 'ltr')  
 }
 
-
-
-
-
-
-
-
-
-
-
-const configureCheckboxClickToPerformClosureForEachIframe = (checkbox, closure) => {
-
-// to be able to re-apply transforms after reload, would need to park closures somewhere then re-fire them
-// on iframe after html loaded
-
+const configureCheckboxClickToPerformClosureForEachIframe = (checkbox, closure, id) => {
   checkbox.addEventListener('click', event => {
+    const value = event.target.value // the closure below only needs to capture the value itself
+    const transformApplicationClosure = (iframe) => {
+      closure(iframe.contentWindow, iframe.contentWindow.document, value, iframe)
+      expandIframeHeight(iframe)
+    }
+
+    // Apply transform to each iframe
     document.querySelectorAll('iframe.article_preview')
-      .forEach(iframe => {
-        closure(iframe.contentWindow, iframe.contentWindow.document, event, iframe)
-        expandIframeHeight(iframe)
-      })
+      .forEach(transformApplicationClosure)
+
+    // Maintain list of active transforms (transform id mapped to transformApplicationClosure),
+    // These activeTransformApplicationClosures are later re-applied to newly loaded articles.
+    if(checkbox.checked){
+      activeTransformApplicationClosures[id] = transformApplicationClosure
+    }else{
+      if(id in activeTransformApplicationClosures){
+        delete activeTransformApplicationClosures[id];
+      }  
+    }
   })
 }
-
 
 const addCheckboxToDemoControls = (id, title, type, value, iframeScopeClickClosure) => {  
   const checkboxContainer = document.createElement('div')
@@ -306,14 +290,8 @@ const addCheckboxToDemoControls = (id, title, type, value, iframeScopeClickClosu
 
   document.getElementById('demo_controls').appendChild(checkboxContainer)
 
-  configureCheckboxClickToPerformClosureForEachIframe(input, iframeScopeClickClosure)
+  configureCheckboxClickToPerformClosureForEachIframe(input, iframeScopeClickClosure, id)
 }
-
-
-
-
-
-
 
 const addTableCollapseControl = () => {
   addCheckboxToDemoControls('collapse_tables_checkbox', 'Collapse tables *', 'checkbox', null, (iframeWindow, iframeDocument) => {
@@ -386,9 +364,9 @@ const addHideRedlinksControl = () => {
 }
 
 const addThemesControl = () => {
-  const themeSelectionHandler = (iframeWindow, iframeDocument, event) => {
+  const themeSelectionHandler = (iframeWindow, iframeDocument, selectedValue) => {
     iframeWindow.pagelib.ThemeTransform.classifyElements(iframeDocument)
-    iframeWindow.pagelib.ThemeTransform.setTheme(iframeDocument, iframeWindow.pagelib.ThemeTransform.THEME[event.target.value])
+    iframeWindow.pagelib.ThemeTransform.setTheme(iframeDocument, iframeWindow.pagelib.ThemeTransform.THEME[selectedValue])
   }
   const div = document.createElement('div')
   div.innerHTML = 'Theme'
@@ -400,15 +378,18 @@ const addThemesControl = () => {
 }
 
 const addPlatformsControl = () => {
-  const platformSelectionHandler = (iframeWindow, iframeDocument, event) => {
+  const platformSelectionHandler = (iframeWindow, iframeDocument, selectedValue) => {
     const html = iframeDocument.querySelector('html')
     html.classList.remove(iframeWindow.pagelib.PlatformTransform.CLASS.ANDROID)
     html.classList.remove(iframeWindow.pagelib.PlatformTransform.CLASS.IOS)
-    html.classList.add(iframeWindow.pagelib.PlatformTransform.CLASS[event.target.value])
+    if (selectedValue in iframeWindow.pagelib.PlatformTransform.CLASS) {
+      html.classList.add(iframeWindow.pagelib.PlatformTransform.CLASS[selectedValue])
+    }
   }
   const div = document.createElement('div')
   div.innerHTML = 'Platform'
   document.getElementById('demo_controls').appendChild(div)
+  addCheckboxToDemoControls('platform_radio', 'Unspecified', 'radio', null, platformSelectionHandler)
   addCheckboxToDemoControls('platform_radio', 'iOS', 'radio', 'IOS', platformSelectionHandler)
   addCheckboxToDemoControls('platform_radio', 'Android', 'radio', 'ANDROID', platformSelectionHandler)
 
@@ -449,7 +430,7 @@ const addFooterLegal = (iframeWindow, iframeDocument) => {
 }
 
 const addFooterControl = () => {
-  addCheckboxToDemoControls('footer_checkbox', 'Add footer *', 'checkbox', null, (iframeWindow, iframeDocument, event, iframe) => {
+  addCheckboxToDemoControls('footer_checkbox', 'Add footer *', 'checkbox', null, (iframeWindow, iframeDocument, selectedValue, iframe) => {
     event.target.disabled = true
     addFooterContainer(iframeWindow, iframeDocument)
     addFooterMenu(iframeWindow, iframeDocument)
@@ -459,7 +440,7 @@ const addFooterControl = () => {
 }
 
 const addLeadIntroductionControl = () => {
-  addCheckboxToDemoControls('first_paragraph_checkbox', 'Move 1st Paragraph Up (only needed for mobileview) *', 'checkbox', null, (iframeWindow, iframeDocument, event) => {
+  addCheckboxToDemoControls('first_paragraph_checkbox', 'Move 1st Paragraph Up (only needed for mobileview) *', 'checkbox', null, (iframeWindow, iframeDocument) => {
     event.target.disabled = true
     if (iframeDocument.articleRef.sourceType == ArticleRefSourceType.mobileView){
       iframeWindow.pagelib.LeadIntroductionTransform.moveLeadIntroductionUp(iframeDocument, 'content_block_0', iframeDocument.querySelector('.section_header'))
@@ -468,8 +449,8 @@ const addLeadIntroductionControl = () => {
 }
 
 const addRTLControl = () => {
-  const selectionHandler = (iframeWindow, iframeDocument, event) => {
-    iframeDocument.querySelector('html').setAttribute('dir', event.target.value)
+  const selectionHandler = (iframeWindow, iframeDocument, selectedValue) => {
+    iframeDocument.querySelector('html').setAttribute('dir', selectedValue)
   }
   const div = document.createElement('div')
   div.innerHTML = 'Text direction'
@@ -477,25 +458,6 @@ const addRTLControl = () => {
   addCheckboxToDemoControls('dir_radio', 'LTR', 'radio', 'ltr', selectionHandler)
   addCheckboxToDemoControls('dir_radio', 'RTL', 'radio', 'rtl', selectionHandler)
 }
- 
-// const addLazyImageLoadControl = () => {
-//     //TODO: add it!
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const removeAllIframePreviews = () => {
   const removeElement = iframe => iframe.parentNode.removeChild(iframe)
@@ -529,20 +491,6 @@ const addIframePreviewsForArticleRefs = articleRefs => {
     }))
 }
 
-
-/*
-TODO:
-- reset form elements on article selection 
-- add PCS content source
-- add support for lazy img
-- remove all old demo code
-*/
-
-
-
-
-
-
 const addTransformControls = () => {
   addThemesControl()
   addPlatformsControl()
@@ -555,68 +503,37 @@ const addTransformControls = () => {
   addHideRedlinksControl()
   addFooterControl()
   addRTLControl()
-  // addLazyImageLoadControl()
+  //TODO: add addLazyImageLoadControl()
 }
 
+const articleSelectElement = document.getElementById('theme_demo_article_select')
+const articleRefsForSelectedArticleOptions = (selectElement, articleRefs) => articleRefs.filter(articleRef => selectedValuesFromSelect(selectElement).includes(articleRef.fileName()))
 
+fetch(DEMO_ARTICLES_INDEX_PATH)
+  .then(response => response.json())
+  .then(articleRefsFromArticlesJSON)
+  .then(articleRefs => [articleSelectOptionsFromArticleRefs(articleRefs), articleRefs])
+  .then(([options, articleRefs]) => {
+    addArticleOptionsToSelect(options, articleSelectElement)
+    return articleRefs
+  })
+  .then(articleRefs => {
+    articleSelectElement.addEventListener('change', event => {
+      if (!event) {
+        return
+      }
+      
+      let selectedArticleRefs = articleRefsForSelectedArticleOptions(event.target, articleRefs)
 
+      removeAllIframePreviews()
+      addIframePreviewsForArticleRefs(selectedArticleRefs)
+      
+      removeAllAnchorsFromMenu()
+      addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
 
-
-
-
-
-
-  const articleSelectElement = document.getElementById('theme_demo_article_select')
-  const articleRefsForSelectedArticleOptions = (selectElement, articleRefs) => articleRefs.filter(articleRef => selectedValuesFromSelect(selectElement).includes(articleRef.fileName()))
-
-
-
-  fetch(DEMO_ARTICLES_INDEX_PATH)
-    .then(response => response.json())
-    .then(articleRefsFromArticlesJSON)
-    .then(articleRefs => [articleSelectOptionsFromArticleRefs(articleRefs), articleRefs])
-    .then(([options, articleRefs]) => {
-      addArticleOptionsToSelect(options, articleSelectElement)
-      return articleRefs
-    })
-    .then(articleRefs => {
-      articleSelectElement.addEventListener('change', event => {
-        if (!event) {
-          return
-        }
-        
-// document.querySelectorAll('input:checked').forEach(input => {
-//   input.checked = false
-// })
-        
-        let selectedArticleRefs = articleRefsForSelectedArticleOptions(event.target, articleRefs)
- 
-        removeAllIframePreviews()
-        addIframePreviewsForArticleRefs(selectedArticleRefs)
-        
-        removeAllAnchorsFromMenu()
-        addAnchorsToMenu(anchorsFromArticleRefs(selectedArticleRefs))
- 
-        //TODO: to reset all form elements here
-// setTimeout(function(){ 
-// let inputs = document.querySelectorAll('input:checked')
-// inputs.forEach(input => {
-// 
-//   var evt = new MouseEvent('click', {
-// 		bubbles: true,
-// 		cancelable: true,
-// 		view: window
-// 	})
-//   input.dispatchEvent(evt)
-// 
-// })
-// console.log(inputs.length)
-// }, 3000);
-
-      }, true)
-    })
-    .then(addTransformControls)
-
+    }, true)
+  })
+  .then(addTransformControls)
 
     </script>
 </body>
