@@ -8,6 +8,12 @@ const CLASS = {
   PROTECTION: { UNPROTECTED: '', PROTECTED: 'page-protected', FORBIDDEN: 'no-editing' }
 }
 
+const IDS = {
+  TITLE_DESCRIPTION: 'pagelib_edit_section_title_description',
+  ADD_TITLE_DESCRIPTION: 'pagelib_edit_section_add_title_description',
+  DIVIDER: 'pagelib_edit_section_divider'
+}
+
 const DATA_ATTRIBUTE = { SECTION_INDEX: 'data-id', ACTION: 'data-action' }
 const ACTION_EDIT_SECTION = 'edit_section'
 
@@ -67,8 +73,65 @@ const newEditSectionHeader = (document, index, level, titleHTML, showEditPencil 
   return element
 }
 
+class TitleDescription {
+  constructor(document, titleDescription, additionString, isEditable) {
+    this.document = document
+    this.titleDescription = titleDescription
+    this.additionString = additionString
+    this.isEditable = isEditable
+  }
+  elements() {
+    const p = this.document.createElement('p')
+    p.id = IDS.TITLE_DESCRIPTION
+    p.innerHTML = this.titleDescription
+    return p
+  }
+  additionElements() {
+    const a = this.document.createElement('a')
+    a.href = '#'
+    a.setAttribute('data-action', 'add_title_description')
+    const p = this.document.createElement('p')
+    p.id = IDS.ADD_TITLE_DESCRIPTION
+    p.innerHTML = this.additionString
+    a.appendChild(p)
+    return a
+  }
+  titleDescriptionExists() {
+    return this.titleDescription !== undefined && this.titleDescription.length > 0
+  }
+  elementsToShow() {
+    if (!this.isEditable || this.titleDescriptionExists()) {
+      return this.elements()
+    }
+    return this.additionElements()
+  }
+}
+
+const newEditLeadSectionHeader = (document, articleDisplayTitle, titleDescription, 
+  addTitleDescriptionString, isTitleDescriptionEditable, showEditPencil = true) => {
+
+  const container = document.createElement('div')
+
+  container.appendChild(newEditSectionHeader(document, 0, 1, articleDisplayTitle, showEditPencil))
+
+  const titleDescriptionObj = new TitleDescription(document, titleDescription, addTitleDescriptionString,
+    isTitleDescriptionEditable)
+
+  const titleDescriptionElements = titleDescriptionObj.elementsToShow()
+  if (titleDescriptionElements) {
+    container.appendChild(titleDescriptionElements)
+  }
+
+  const divider = document.createElement('hr')
+  divider.id = IDS.DIVIDER
+  container.appendChild(divider)
+
+  return container
+}
+
 export default {
   CLASS,
   newEditSectionButton,
-  newEditSectionHeader
+  newEditSectionHeader,
+  newEditLeadSectionHeader
 }
