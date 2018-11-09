@@ -73,6 +73,17 @@ const newEditSectionHeader = (document, index, level, titleHTML, showEditPencil 
   return element
 }
 
+/**
+ * Lead section header is a special case as it needs to show article title and description too.
+ * As a client, you may wish to set the ID attribute.
+ * @param {!Document} document
+ * @param {?string} articleDisplayTitle Article display title.
+ * @param {?string} titleDescription Article title description.
+ * @param {?string} addTitleDescriptionString Localized string e.g. 'Add title description'.
+ * @param {?boolean} isTitleDescriptionEditable Whether title description is editable.
+ * @param {?boolean} showEditPencil Whether to show the "edit" pencil (default is true).
+ * @return {!HTMLElement}
+ */
 const newEditLeadSectionHeader = (document, articleDisplayTitle, titleDescription,
   addTitleDescriptionString, isTitleDescriptionEditable, showEditPencil = true) => {
 
